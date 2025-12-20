@@ -33,10 +33,14 @@ const AdminAnnouncements: React.FC<AdminAnnouncementsProps> = ({ onNavigate }) =
     if (!topic) return alert("Please enter a topic for AI to help.");
     setIsGenerating(true);
     const result = await generateAnnouncementContent(topic, audience);
-    if (result) {
+
+    if ('error' in result) {
+      alert(result.error);
+    } else {
       setTitle(result.title);
       setBody(result.body);
     }
+
     setIsGenerating(false);
   };
 
