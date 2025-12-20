@@ -1,0 +1,8 @@
+{
+  "name": "Squash Academy Pro",
+  "description": "A high-performance squash academy management app for scheduling, bookings, and announcements with AI-powered assistance for admin notifications.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
