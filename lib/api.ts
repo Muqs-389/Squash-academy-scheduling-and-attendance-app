@@ -1,59 +1,11 @@
 
 import { DEMO_MODE } from '../config';
 import { UserProfile, Session, Booking, Announcement, UserRole } from '../types';
-import { addDays, startOfToday, setHours, setMinutes, isSaturday, isSunday } from 'date-fns';
 
 const MAX_CAPACITY = 7;
 
 const generateInitialSessions = (): Session[] => {
-  const sessions: Session[] = [];
-  const today = startOfToday();
-
-  for (let i = 0; i < 14; i++) {
-    const currentDay = addDays(today, i);
-    if (isSunday(currentDay)) continue;
-
-    if (isSaturday(currentDay)) {
-      sessions.push({
-        id: `s-sat-kids-${i}`,
-        title: 'Junior Academy (Sat)',
-        start: { toDate: () => setHours(setMinutes(currentDay, 0), 10) },
-        end: { toDate: () => setHours(setMinutes(currentDay, 0), 11) },
-        location: 'Court 1',
-        capacity: MAX_CAPACITY,
-        bookedCount: 2,
-      });
-      sessions.push({
-        id: `s-sat-adults-${i}`,
-        title: 'Adult Performance (Sat)',
-        start: { toDate: () => setHours(setMinutes(currentDay, 0), 11) },
-        end: { toDate: () => setHours(setMinutes(currentDay, 0), 12) },
-        location: 'Court 1',
-        capacity: MAX_CAPACITY,
-        bookedCount: 5,
-      });
-    } else {
-      sessions.push({
-        id: `s-mf-kids-${i}`,
-        title: 'Junior Squad Training',
-        start: { toDate: () => setHours(setMinutes(currentDay, 0), 16) },
-        end: { toDate: () => setHours(setMinutes(currentDay, 30), 17) },
-        location: 'Arena Court',
-        capacity: MAX_CAPACITY,
-        bookedCount: 3,
-      });
-      sessions.push({
-        id: `s-mf-adults-${i}`,
-        title: 'Adult Social Drill',
-        start: { toDate: () => setHours(setMinutes(currentDay, 30), 17) },
-        end: { toDate: () => setHours(setMinutes(currentDay, 30), 18) },
-        location: 'Arena Court',
-        capacity: MAX_CAPACITY,
-        bookedCount: 1,
-      });
-    }
-  }
-  return sessions;
+  return [];
 };
 
 class ApiService {
@@ -125,13 +77,8 @@ class ApiService {
   }
 
   async getSessions(): Promise<Session[]> {
-    let sessions = this.getStore<any[]>('sessions', []);
-    if (sessions.length === 0) {
-      const initial = generateInitialSessions();
-      const raw = initial.map(s => ({ ...s, start: s.start.toDate(), end: s.end.toDate() }));
-      this.setStore('sessions', raw);
-      sessions = raw;
-    }
+    const sessions = this.getStore<any[]>('sessions', []);
+    if (sessions.length === 0) return [];
     return sessions.map(s => ({
       ...s,
       start: { toDate: () => new Date(s.start) },
@@ -192,18 +139,7 @@ class ApiService {
 
   async getAnnouncements(): Promise<Announcement[]> {
     const items = this.getStore<any[]>('announcements', []);
-    if (items.length === 0) {
-      const welcome = {
-        id: 'a1',
-        title: 'Academy Relaunch!',
-        body: 'Welcome to Muqs\' School of Squash. We are now strictly enforcing the 7-player roster limit. Book early!',
-        createdAt: new Date(),
-        createdBy: 'admin',
-        readBy: []
-      };
-      this.setStore('announcements', [welcome]);
-      return [{ ...welcome, createdAt: { toDate: () => welcome.createdAt } }];
-    }
+    if (items.length === 0) return [];
     return items.map(i => ({ ...i, createdAt: { toDate: () => new Date(i.createdAt) } }));
   }
 
