@@ -42,7 +42,7 @@ const Announcements: React.FC = () => {
       ) : announcements.length === 0 ? (
         <div className="bg-white border border-slate-100 p-12 rounded-[2.5rem] text-center shadow-premium">
           <Megaphone size={40} className="mx-auto text-slate-100 mb-4" />
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Clear Skies • No Announcements</p>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">No announcements yet</p>
         </div>
       ) : (
         <div className="space-y-6">
