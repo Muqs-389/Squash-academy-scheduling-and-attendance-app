@@ -13,7 +13,7 @@ const Schedule: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
   const [selectingPlayer, setSelectingPlayer] = useState<Session | null>(null);
-  const { userProfile } = useAuth();
+  const { userProfile, isAdmin } = useAuth();
   const [userBookings, setUserBookings] = useState<Record<string, string[]>>({});
 
   const fetchSessions = async () => {
@@ -72,63 +72,78 @@ const Schedule: React.FC = () => {
       </header>
 
       <div className="space-y-6">
-        {sessions.map(session => {
-          const startDate = session.start.toDate();
-          const isFull = session.bookedCount >= 7;
-          const sessionPlayerBookings = userBookings[session.id] || [];
-          const remaining = 7 - session.bookedCount;
-          
-          return (
-            <div key={session.id} className="bg-white rounded-[2.5rem] p-7 shadow-premium border border-slate-50 relative overflow-hidden transition-all active:scale-[0.99]">
-              <div className="flex justify-between items-center mb-6">
-                <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isFull ? 'bg-red-50 text-red-500' : 'bg-brand-secondary/10 text-brand-secondary'}`}>
-                  {isFull ? 'Roster Full' : 'Join Roster'}
+        {sessions.length === 0 ? (
+          <div className="bg-white border border-slate-100 p-12 rounded-[2.5rem] text-center shadow-premium space-y-4">
+            <Calendar size={40} className="mx-auto text-slate-100" />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-[10px]">No sessions yet</p>
+            {isAdmin && (
+              <div className="space-y-3">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Coach, ready to post the next rally?</p>
+                <Button onClick={() => navigate('/admin')} className="bg-slate-900 text-white px-6 py-3">
+                  Open Coach Control
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          sessions.map(session => {
+            const startDate = session.start.toDate();
+            const isFull = session.bookedCount >= 7;
+            const sessionPlayerBookings = userBookings[session.id] || [];
+            const remaining = 7 - session.bookedCount;
+
+            return (
+              <div key={session.id} className="bg-white rounded-[2.5rem] p-7 shadow-premium border border-slate-50 relative overflow-hidden transition-all active:scale-[0.99]">
+                <div className="flex justify-between items-center mb-6">
+                  <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${isFull ? 'bg-red-50 text-red-500' : 'bg-brand-secondary/10 text-brand-secondary'}`}>
+                    {isFull ? 'Roster Full' : 'Join Roster'}
+                  </div>
+                  {sessionPlayerBookings.length > 0 && (
+                    <div className="flex gap-0.5">
+                      {sessionPlayerBookings.map((_, idx) => (
+                        <div key={idx} className="w-2 h-2 rounded-full bg-brand-ball"></div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {sessionPlayerBookings.length > 0 && (
-                  <div className="flex gap-0.5">
-                    {sessionPlayerBookings.map((_, idx) => (
-                      <div key={idx} className="w-2 h-2 rounded-full bg-brand-ball"></div>
+
+                <div className="mb-6">
+                  <h3 className="text-2xl font-black text-slate-900 leading-tight mb-2 uppercase">{session.title}</h3>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                      <Calendar size={14} className="text-brand-secondary" /> {format(startDate, 'EEEE, MMM do')}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                      <Clock size={14} className="text-brand-secondary" /> {format(startDate, 'h:mm a')}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50/50 p-5 rounded-3xl mb-6 border border-slate-100">
+                  <div className="flex justify-between items-end mb-2.5">
+                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Court Capacity</p>
+                    <p className={`text-[10px] font-black uppercase tracking-widest ${remaining <= 2 ? 'text-red-500' : 'text-slate-900'}`}>
+                      {remaining} {remaining === 1 ? 'Spot' : 'Spots'} Remaining
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {[...Array(7)].map((_, i) => (
+                      <div key={i} className={`h-2 flex-1 rounded-full ${i < session.bookedCount ? 'bg-brand-secondary shadow-sm shadow-lime-200' : 'bg-slate-200'}`}></div>
                     ))}
                   </div>
-                )}
-              </div>
-
-              <div className="mb-6">
-                <h3 className="text-2xl font-black text-slate-900 leading-tight mb-2 uppercase">{session.title}</h3>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                    <Calendar size={14} className="text-brand-secondary" /> {format(startDate, 'EEEE, MMM do')}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-black uppercase tracking-widest">
-                    <Clock size={14} className="text-brand-secondary" /> {format(startDate, 'h:mm a')}
-                  </div>
                 </div>
-              </div>
 
-              <div className="bg-slate-50/50 p-5 rounded-3xl mb-6 border border-slate-100">
-                <div className="flex justify-between items-end mb-2.5">
-                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Court Capacity</p>
-                  <p className={`text-[10px] font-black uppercase tracking-widest ${remaining <= 2 ? 'text-red-500' : 'text-slate-900'}`}>
-                    {remaining} {remaining === 1 ? 'Spot' : 'Spots'} Remaining
-                  </p>
-                </div>
-                <div className="flex gap-1.5">
-                  {[...Array(7)].map((_, i) => (
-                    <div key={i} className={`h-2 flex-1 rounded-full ${i < session.bookedCount ? 'bg-brand-secondary shadow-sm shadow-lime-200' : 'bg-slate-200'}`}></div>
-                  ))}
-                </div>
+                <Button
+                  onClick={() => setSelectingPlayer(session)}
+                  disabled={isFull}
+                  className={`py-4 ${isFull ? 'bg-slate-100 text-slate-400 shadow-none' : 'bg-slate-900 text-white'}`}
+                >
+                  {isFull ? 'Roster Locked' : 'Book Session'}
+                </Button>
               </div>
-
-              <Button 
-                onClick={() => setSelectingPlayer(session)}
-                disabled={isFull}
-                className={`py-4 ${isFull ? 'bg-slate-100 text-slate-400 shadow-none' : 'bg-slate-900 text-white'}`}
-              >
-                {isFull ? 'Roster Locked' : 'Book Session'}
-              </Button>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Modern Player Selection Modal */}
