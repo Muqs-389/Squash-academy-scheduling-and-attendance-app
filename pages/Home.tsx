@@ -40,7 +40,10 @@ const Home: React.FC = () => {
     }
   };
 
-  const dailyTip = COACH_TIPS[Math.floor(Math.random() * COACH_TIPS.length)];
+  const hasCoachTips = COACH_TIPS.length > 0;
+  const dailyTip = hasCoachTips
+    ? COACH_TIPS[Math.floor(Math.random() * COACH_TIPS.length)]
+    : null;
 
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 pb-16">
@@ -63,7 +66,7 @@ const Home: React.FC = () => {
             <p className="text-[10px] font-black uppercase tracking-widest">Roster Protocol Active</p>
           </div>
           <h2 className="text-4xl font-black tracking-tighter leading-none uppercase italic">Weekly<br/>Squads</h2>
-          <p className="text-white/90 text-sm font-bold max-w-[200px]">Strict 7-player limit. Reserve your spots now.</p>
+          <p className="text-white/90 text-sm font-bold max-w-[200px]">Currently capped at 7 players per squad—save your spot early.</p>
           <Button 
             onClick={() => navigate('/schedule')} 
             className="bg-white text-brand-secondary border-none w-auto inline-flex px-10 hover:bg-slate-50 font-black shadow-xl"
@@ -128,15 +131,17 @@ const Home: React.FC = () => {
       </section>
 
       {/* Pro-Tips Feature */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] shadow-premium flex items-start gap-5">
-        <div className="bg-brand-ball text-slate-900 p-3.5 rounded-2xl shadow-lg shadow-yellow-500/20 shrink-0">
-          <Target size={24} strokeWidth={3} />
+      {hasCoachTips && dailyTip && (
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-[2.5rem] shadow-premium flex items-start gap-5">
+          <div className="bg-brand-ball text-slate-900 p-3.5 rounded-2xl shadow-lg shadow-yellow-500/20 shrink-0">
+            <Target size={24} strokeWidth={3} />
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-brand-lime uppercase tracking-[0.2em] mb-1.5 italic">Coach Muq's Pro-Tip</p>
+            <p className="text-white text-sm font-bold leading-snug italic">"{dailyTip}"</p>
+          </div>
         </div>
-        <div>
-          <p className="text-[10px] font-black text-brand-lime uppercase tracking-[0.2em] mb-1.5 italic">Coach Muq's Pro-Tip</p>
-          <p className="text-white text-sm font-bold leading-snug italic">"{dailyTip}"</p>
-        </div>
-      </div>
+      )}
 
       {/* Action Grid */}
       <div className="grid grid-cols-2 gap-4">
