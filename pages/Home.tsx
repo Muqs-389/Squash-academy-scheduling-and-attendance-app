@@ -1,23 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../App';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Target, Trophy, Users, Plus, X, Star, Megaphone, ChevronRight } from 'lucide-react';
 import Button from '../components/Button';
 import { api } from '../lib/api';
-
-const COACH_TIPS = [
-  "Dominate the T-Line. If you control the center, you control the point.",
-  "Early racket preparation is the difference between a weak shot and a winner.",
-  "Always keep your eyes glued to the ball until it hits your strings.",
-  "The back corners are your best friend. Deep drives force weak returns.",
-  "Squash is won in the mind. Stay focused on the next rally only."
-];
+import { Tip } from '../types';
 
 const Home: React.FC = () => {
   const { userProfile } = useAuth();
   const navigate = useNavigate();
   const [newChild, setNewChild] = useState('');
   const [showAdd, setShowAdd] = useState(false);
+  const [tips, setTips] = useState<Tip[]>([]);
 
   const handleLogout = async () => {
     await api.logout();
@@ -40,9 +34,18 @@ const Home: React.FC = () => {
     }
   };
 
-  const hasCoachTips = COACH_TIPS.length > 0;
+  useEffect(() => {
+    const loadTips = async () => {
+      const storedTips = await api.getTips();
+      setTips(storedTips);
+    };
+
+    loadTips();
+  }, []);
+
+  const hasCoachTips = tips.length > 0;
   const dailyTip = hasCoachTips
-    ? COACH_TIPS[Math.floor(Math.random() * COACH_TIPS.length)]
+    ? tips[Math.floor(Math.random() * tips.length)]
     : null;
 
   return (
@@ -67,11 +70,11 @@ const Home: React.FC = () => {
           </div>
           <h2 className="text-4xl font-black tracking-tighter leading-none uppercase italic">Weekly<br/>Squads</h2>
           <p className="text-white/90 text-sm font-bold max-w-[200px]">Currently capped at 7 players per squad—save your spot early.</p>
-          <Button 
-            onClick={() => navigate('/schedule')} 
-            className="bg-white text-brand-secondary border-none w-auto inline-flex px-10 hover:bg-slate-50 font-black shadow-xl"
+          <Button
+            onClick={() => navigate('/schedule')}
+            className="bg-white text-slate-900 border-none w-auto inline-flex px-10 hover:bg-slate-50 font-black shadow-xl"
           >
-            Open Schedule
+            View Timetable
           </Button>
         </div>
         <Trophy size={160} className="absolute -right-12 -bottom-10 opacity-10 rotate-12" />
@@ -138,7 +141,7 @@ const Home: React.FC = () => {
           </div>
           <div>
             <p className="text-[10px] font-black text-brand-lime uppercase tracking-[0.2em] mb-1.5 italic">Coach Muq's Pro-Tip</p>
-            <p className="text-white text-sm font-bold leading-snug italic">"{dailyTip}"</p>
+            <p className="text-white text-sm font-bold leading-snug italic">"{dailyTip.body}"</p>
           </div>
         </div>
       )}

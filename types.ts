@@ -45,6 +45,13 @@ export interface Announcement {
   readBy: string[]; // array of user IDs
 }
 
+export interface Tip {
+  id: string;
+  body: string;
+  createdAt: any;
+  createdBy: string;
+}
+
 export interface NavItem {
   label: string;
   icon: React.ElementType;
