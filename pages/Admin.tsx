@@ -34,8 +34,8 @@ const Admin: React.FC = () => {
 
       await api.createSession({
         title,
-        start: { toDate: () => startDateTime },
-        end: { toDate: () => endDateTime },
+        start: startDateTime,
+        end: endDateTime,
         location: 'Academy Court',
         capacity: 7, // Fixed at 7 per coach request
         recurrence: 'none',
