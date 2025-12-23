@@ -12,6 +12,7 @@ const Home: React.FC = () => {
   const [newChild, setNewChild] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [tips, setTips] = useState<Tip[]>([]);
+  const [hasSessions, setHasSessions] = useState(false);
 
   const handleLogout = async () => {
     await api.logout();
@@ -35,12 +36,15 @@ const Home: React.FC = () => {
   };
 
   useEffect(() => {
-    const loadTips = async () => {
-      const storedTips = await api.getTips();
-      setTips(storedTips);
+    const loadHomeData = async () => {
+      const [storedTips, sessions] = await Promise.all([api.getTips(), api.getSessions()]);
+      const realTips = storedTips.filter(tip => tip.body?.trim());
+
+      setTips(realTips);
+      setHasSessions(sessions.length > 0);
     };
 
-    loadTips();
+    loadHomeData();
   }, []);
 
   const hasCoachTips = tips.length > 0;
@@ -71,10 +75,10 @@ const Home: React.FC = () => {
           <h2 className="text-4xl font-black tracking-tighter leading-none uppercase italic">Weekly<br/>Squads</h2>
           <p className="text-white/90 text-sm font-bold max-w-[200px]">Currently capped at 7 players per squad—save your spot early.</p>
           <Button
-            onClick={() => navigate('/schedule')}
+            onClick={() => navigate(hasSessions ? '/schedule' : '/admin')}
             className="bg-white text-slate-900 border-none w-auto inline-flex px-10 hover:bg-slate-50 font-black shadow-xl"
           >
-            View Timetable
+            {hasSessions ? 'View schedule' : 'Create your first session'}
           </Button>
         </div>
         <Trophy size={160} className="absolute -right-12 -bottom-10 opacity-10 rotate-12" />
