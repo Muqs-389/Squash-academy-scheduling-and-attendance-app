@@ -4,8 +4,59 @@ import { Session } from '../types';
 import { useAuth } from '../App';
 import { format } from 'date-fns';
 import Button from '../components/Button';
-import { Clock, Calendar, CheckCircle2, X, User, ChevronRight } from 'lucide-react';
+import { Clock, Calendar, CheckCircle2, X, User, ChevronRight, Download, CalendarPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+const formatDateForCalendar = (date: Date) =>
+  date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+const createGoogleCalendarUrl = (title: string, startDate: Date, endDate: Date, location: string) => {
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${formatDateForCalendar(startDate)}/${formatDateForCalendar(endDate)}`,
+    location,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+};
+
+const escapeICSValue = (value: string) =>
+  value.replace(/\\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n');
+
+const buildIcsContent = (title: string, startDate: Date, endDate: Date, location: string, uid: string) => {
+  const dtStart = formatDateForCalendar(startDate);
+  const dtEnd = formatDateForCalendar(endDate);
+  const dtStamp = formatDateForCalendar(new Date());
+
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Squash Academy//Schedule//EN',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${dtStamp}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${escapeICSValue(title)}`,
+    `LOCATION:${escapeICSValue(location)}`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\n');
+};
+
+const downloadIcsFile = (title: string, startDate: Date, endDate: Date, location: string, uid: string) => {
+  const icsContent = buildIcsContent(title, startDate, endDate, location, uid);
+  const blob = new Blob([icsContent], { type: 'text/calendar' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${title.replace(/\s+/g, '_')}.ics`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
 
 const Schedule: React.FC = () => {
   const navigate = useNavigate();
@@ -88,9 +139,16 @@ const Schedule: React.FC = () => {
         ) : (
           sessions.map(session => {
             const startDate = session.start.toDate();
+            const endDate = session.end?.toDate ? session.end.toDate() : new Date(startDate.getTime() + 60 * 60 * 1000);
             const isFull = session.bookedCount >= 7;
             const sessionPlayerBookings = userBookings[session.id] || [];
             const remaining = 7 - session.bookedCount;
+            const googleCalendarUrl = createGoogleCalendarUrl(
+              session.title,
+              startDate,
+              endDate,
+              session.location,
+            );
 
             return (
               <div key={session.id} className="bg-white rounded-[2.5rem] p-7 shadow-premium border border-slate-50 relative overflow-hidden transition-all active:scale-[0.99]">
@@ -131,6 +189,35 @@ const Schedule: React.FC = () => {
                       <div key={i} className={`h-2 flex-1 rounded-full ${i < session.bookedCount ? 'bg-brand-secondary shadow-sm shadow-lime-200' : 'bg-slate-200'}`}></div>
                     ))}
                   </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <a
+                    href={googleCalendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl bg-brand-secondary/10 text-brand-secondary hover:bg-brand-secondary/20 transition-colors"
+                  >
+                    <CalendarPlus size={14} />
+                    Add to Google Calendar
+                  </a>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-auto px-5 py-3 text-[10px] font-black uppercase tracking-widest border-slate-200 text-slate-900"
+                    onClick={() =>
+                      downloadIcsFile(
+                        session.title,
+                        startDate,
+                        endDate,
+                        session.location,
+                        `${session.id}@squash.academy`,
+                      )
+                    }
+                  >
+                    <Download size={14} />
+                    Download .ics
+                  </Button>
                 </div>
 
                 <Button
