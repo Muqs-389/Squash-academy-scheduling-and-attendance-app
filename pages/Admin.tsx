@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, clearLocalDataStores } from '../lib/api';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { ShieldCheck, Trophy } from 'lucide-react';
@@ -87,10 +87,9 @@ const Admin: React.FC = () => {
   };
 
   const handleResetData = () => {
-    if (!window.confirm('Reset all app data? This will clear roster, sessions, bookings, announcements, and tips.')) return;
+    if (!window.confirm('Reset all app data? This will clear roster, sessions, bookings, announcements, tips, and sign-in state.')) return;
 
-    const keys = ['academy_sessions', 'academy_bookings', 'academy_announcements', 'academy_tips', 'demo_auth_user'];
-    keys.forEach(key => localStorage.removeItem(key));
+    clearLocalDataStores();
     window.location.reload();
   };
 
@@ -195,7 +194,7 @@ const Admin: React.FC = () => {
             <li className="text-slate-400 text-xs font-medium">• Use the "News" section for weather alerts or tournament results.</li>
         </ul>
         <div className="mt-6">
-          <Button onClick={handleResetData} variant="danger" className="w-full">Reset App Data</Button>
+          <Button onClick={handleResetData} variant="danger" className="w-full">Reset Data</Button>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2 text-center">Clears local storage & reloads</p>
         </div>
       </div>
