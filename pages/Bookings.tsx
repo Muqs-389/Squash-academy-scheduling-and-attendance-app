@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../App';
 import { format } from 'date-fns';
-import { Calendar, Trash2, Clock, User } from 'lucide-react';
+import { Calendar, Trash2, Clock, User, Download } from 'lucide-react';
 import { Booking } from '../types';
 
 const Bookings: React.FC = () => {
@@ -33,6 +33,42 @@ const Bookings: React.FC = () => {
     } catch (e) { alert("Failed to cancel."); }
   };
 
+  const exportCalendar = () => {
+    if (bookings.length === 0) {
+      alert('No bookings to export yet.');
+      return;
+    }
+
+    const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+    const events = bookings
+      .filter(b => b.sessionDate?.toDate)
+      .map(b => {
+        const start = b.sessionDate!.toDate();
+        const end = new Date(start.getTime() + 90 * 60000); // default 90 minute block
+        return [
+          'BEGIN:VEVENT',
+          `UID:${b.id}@muqssquash`,
+          `DTSTAMP:${formatDate(new Date())}`,
+          `DTSTART:${formatDate(start)}`,
+          `DTEND:${formatDate(end)}`,
+          `SUMMARY:${b.sessionTitle || 'Squash Session'}`,
+          `DESCRIPTION:Athlete: ${b.playerName}`,
+          'END:VEVENT'
+        ].join('\r\n');
+      });
+
+    const icsContent = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Muqs Squash Academy//Calendar Export//EN', ...events, 'END:VCALENDAR'].join('\r\n');
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'academy-bookings.ics';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) return (
     <div className="flex justify-center py-20">
       <div className="w-8 h-8 border-4 border-slate-100 border-t-brand-secondary rounded-full animate-spin"></div>
@@ -43,7 +79,18 @@ const Bookings: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <header>
         <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Academy Passes</h1>
-        <p className="text-slate-500 font-bold text-sm mt-1">Confirmed roster entries for your family.</p>
+        <div className="flex items-center gap-3 flex-wrap mt-2">
+          <p className="text-slate-500 font-bold text-sm">Confirmed roster entries for your family.</p>
+          {bookings.length > 0 && (
+            <button
+              onClick={exportCalendar}
+              className="inline-flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest shadow-card hover:bg-slate-800 transition-colors"
+            >
+              <Download size={14} />
+              Export Calendar
+            </button>
+          )}
+        </div>
       </header>
       
       {bookings.length === 0 ? (
