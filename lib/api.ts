@@ -2,15 +2,27 @@
 import { DEMO_MODE } from '../config';
 import { UserProfile, Session, Booking, Announcement, UserRole, Tip } from '../types';
 
-const RESETTABLE_KEYS = ['sessions', 'bookings', 'announcements', 'tips'];
+const RESETTABLE_KEYS = ['sessions', 'bookings', 'announcements', 'tips', 'user_profile'];
 
 export const clearLocalDataStores = (extraKeys: string[] = []) => {
   const keysToClear = Array.from(new Set([...RESETTABLE_KEYS, ...extraKeys]));
   keysToClear.forEach((key) => localStorage.removeItem(`academy_${key}`));
+  // Demo auth is stored outside the academy_* namespace
   localStorage.removeItem('demo_auth_user');
 };
 
 const MAX_CAPACITY = 7;
+
+type StoredSession = {
+  id: string;
+  title: string;
+  startISO: string;
+  endISO: string;
+  location: string;
+  capacity: number;
+  bookedCount: number;
+  recurrence?: 'weekly' | 'none';
+};
 
 class ApiService {
   private currentUser: UserProfile | null = null;
@@ -73,25 +85,98 @@ class ApiService {
 
   private getStore<T>(key: string, defaultVal: T): T {
     const stored = localStorage.getItem(`academy_${key}`);
-    return stored ? JSON.parse(stored) : defaultVal;
+    if (!stored) return defaultVal;
+    try {
+      return JSON.parse(stored);
+    } catch (error) {
+      console.error(`Unable to read ${key} store from localStorage`, error);
+      throw new Error('Stored data is corrupted. Please reset app data.');
+    }
   }
 
   private setStore(key: string, val: any) {
     localStorage.setItem(`academy_${key}`, JSON.stringify(val));
   }
 
+  private normalizeDate(value: any): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return new Date(value);
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    if (typeof value === 'object' && typeof value.toDate === 'function') {
+      const parsed = value.toDate();
+      return parsed instanceof Date && !isNaN(parsed.getTime()) ? parsed : null;
+    }
+    return null;
+  }
+
+  private migrateSessions(raw: any[]): { sessions: StoredSession[]; invalidCount: number } {
+    const migrated: StoredSession[] = [];
+    let invalidCount = 0;
+
+    raw.forEach((session) => {
+      try {
+        const startDate = this.normalizeDate(session?.startISO ?? session?.start);
+        const endDate = this.normalizeDate(session?.endISO ?? session?.end ?? session?.start);
+
+        if (!session?.id || !startDate || !endDate) {
+          invalidCount++;
+          return;
+        }
+
+        migrated.push({
+          id: session.id,
+          title: session.title ?? 'Session',
+          startISO: startDate.toISOString(),
+          endISO: endDate.toISOString(),
+          location: session.location ?? 'Academy Court',
+          capacity: session.capacity ?? MAX_CAPACITY,
+          bookedCount: session.bookedCount ?? 0,
+          recurrence: session.recurrence ?? 'none',
+        });
+      } catch (error) {
+        console.error('Failed to migrate session record', session, error);
+        invalidCount++;
+      }
+    });
+
+    return { sessions: migrated, invalidCount };
+  }
+
+  private toRuntimeSession(session: StoredSession): Session {
+    const { startISO, endISO, ...rest } = session;
+    return {
+      ...rest,
+      start: { toDate: () => new Date(startISO) },
+      end: { toDate: () => new Date(endISO) }
+    } as Session;
+  }
+
+  private saveSessions(sessions: StoredSession[]) {
+    this.setStore('sessions', sessions);
+  }
+
+  private getStoredSessions(): StoredSession[] {
+    const raw = this.getStore<any[]>('sessions', []);
+    const { sessions, invalidCount } = this.migrateSessions(raw);
+
+    if (invalidCount > 0) {
+      throw new Error('Some session data is corrupted. Please reset app data from Coach Control.');
+    }
+
+    return sessions;
+  }
+
   async getSessions(): Promise<Session[]> {
-    const sessions = this.getStore<any[]>('sessions', []);
+    const sessions = this.getStoredSessions();
     if (sessions.length === 0) return [];
-    return sessions.map(s => ({
-      ...s,
-      start: { toDate: () => new Date(s.start) },
-      end: { toDate: () => new Date(s.end) }
-    }));
+    return sessions.map((s) => this.toRuntimeSession(s));
   }
 
   async bookSession(session: Session, userId: string, playerName: string) {
-    const sessions = await this.getSessions();
+    const sessions = this.getStoredSessions();
     const target = sessions.find(s => s.id === session.id);
     if (!target) throw new Error("Session vanished!");
     if (target.bookedCount >= MAX_CAPACITY) throw new Error("Court Roster is Full! (Max 7)");
@@ -102,7 +187,7 @@ class ApiService {
     }
 
     target.bookedCount++;
-    this.setStore('sessions', sessions);
+    this.saveSessions(sessions);
 
     const newBooking: Booking = {
       id: `b-${Date.now()}`,
@@ -111,7 +196,7 @@ class ApiService {
       playerName: playerName,
       status: 'confirmed',
       sessionTitle: session.title,
-      sessionDate: session.start.toDate(),
+      sessionDate: new Date(target.startISO),
       createdAt: new Date()
     };
     this.setStore('bookings', [...allBookings, newBooking]);
@@ -124,11 +209,11 @@ class ApiService {
 
     this.setStore('bookings', allBookings.filter(b => b.id !== bookingId));
 
-    const sessions = await this.getSessions();
+    const sessions = this.getStoredSessions();
     const targetSession = sessions.find(s => s.id === booking.sessionId);
     if (targetSession) {
       targetSession.bookedCount = Math.max(0, targetSession.bookedCount - 1);
-      this.setStore('sessions', sessions);
+      this.saveSessions(sessions);
     }
   }
 
@@ -154,15 +239,25 @@ class ApiService {
   }
 
   async createSession(data: any) {
-    const current = await this.getSessions();
-    const newItem = { 
-      ...data, 
-      id: `s-${Date.now()}`, 
-      bookedCount: 0, 
-      start: data.start.toDate(), 
-      end: data.end.toDate() 
+    const current = this.getStoredSessions();
+    const startDate = this.normalizeDate(data.start);
+    const endDate = this.normalizeDate(data.end);
+
+    if (!startDate || !endDate) {
+      throw new Error('Session times are invalid.');
+    }
+
+    const newItem: StoredSession = {
+      id: `s-${Date.now()}`,
+      title: data.title,
+      location: data.location ?? 'Academy Court',
+      capacity: data.capacity ?? MAX_CAPACITY,
+      recurrence: data.recurrence ?? 'none',
+      bookedCount: 0,
+      startISO: startDate.toISOString(),
+      endISO: endDate.toISOString(),
     };
-    this.setStore('sessions', [...current, newItem]);
+    this.saveSessions([...current, newItem]);
   }
 
   async createAnnouncement(data: any) {

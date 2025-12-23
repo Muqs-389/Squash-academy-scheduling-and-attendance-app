@@ -62,6 +62,7 @@ const Schedule: React.FC = () => {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
   const [selectingPlayer, setSelectingPlayer] = useState<Session | null>(null);
   const { userProfile, isAdmin } = useAuth();
@@ -71,7 +72,12 @@ const Schedule: React.FC = () => {
     try {
       const data = await api.getSessions();
       setSessions(data);
-    } catch (error) { console.error(error); } finally { setLoading(false); }
+      setError(null);
+    } catch (error) {
+      console.error(error);
+      setSessions([]);
+      setError('We could not load the court timetable. Please try again or reset app data from Coach Control.');
+    } finally { setLoading(false); }
   };
 
   const fetchUserBookings = async () => {
@@ -111,6 +117,21 @@ const Schedule: React.FC = () => {
       <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.3em]">Inspecting Courts...</p>
     </div>
   );
+
+  if (error) {
+    return (
+      <div className="bg-white border border-red-100 p-10 rounded-[2.5rem] text-center shadow-premium space-y-4">
+        <Calendar size={40} className="mx-auto text-red-200" />
+        <p className="text-red-600 font-black uppercase tracking-widest text-[11px]">Session Data Issue</p>
+        <p className="text-slate-500 text-sm font-semibold max-w-md mx-auto">{error}</p>
+        {isAdmin && (
+          <Button onClick={() => navigate('/admin')} className="bg-slate-900 text-white px-6 py-3">
+            Open Coach Control
+          </Button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
