@@ -2,6 +2,14 @@
 import { DEMO_MODE } from '../config';
 import { UserProfile, Session, Booking, Announcement, UserRole, Tip } from '../types';
 
+const RESETTABLE_KEYS = ['sessions', 'bookings', 'announcements', 'tips'];
+
+export const clearLocalDataStores = (extraKeys: string[] = []) => {
+  const keysToClear = Array.from(new Set([...RESETTABLE_KEYS, ...extraKeys]));
+  keysToClear.forEach((key) => localStorage.removeItem(`academy_${key}`));
+  localStorage.removeItem('demo_auth_user');
+};
+
 const MAX_CAPACITY = 7;
 
 class ApiService {
