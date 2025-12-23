@@ -18,3 +18,8 @@ View your app in AI Studio: https://ai.studio/apps/drive/1jaXF9XGKgXrVq0aMnijXAU
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Maintenance notes
+
+- **Reset demo data:** Log in as the coach, open the **Coach Control** tab, and hit **Reset App Data** to clear demo storage (sessions, bookings, announcements, tips, and the cached login) and reload with a clean slate.
+- **Calendar export:** From **Academy Passes** (Bookings), use **Export Calendar** to download an `.ics` file of your confirmed bookings and drop it into Google/Apple/Outlook calendars.
