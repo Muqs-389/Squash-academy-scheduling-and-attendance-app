@@ -63,9 +63,9 @@ class ApiService {
     this.authSubscribers.forEach(cb => cb(this.currentUser));
   }
 
-  private getStore<T>(key: string, defaultVal: T): T {
+  private getStore<T>(key: string): T | null {
     const stored = localStorage.getItem(`academy_${key}`);
-    return stored ? JSON.parse(stored) : defaultVal;
+    return stored ? JSON.parse(stored) : null;
   }
 
   private setStore(key: string, val: any) {
@@ -73,8 +73,8 @@ class ApiService {
   }
 
   async getSessions(): Promise<Session[]> {
-    const sessions = this.getStore<any[]>('sessions', []);
-    if (sessions.length === 0) return [];
+    const sessions = this.getStore<any[]>('sessions');
+    if (!sessions || sessions.length === 0) return [];
     return sessions.map(s => ({
       ...s,
       start: { toDate: () => new Date(s.start) },
@@ -88,7 +88,7 @@ class ApiService {
     if (!target) throw new Error("Session vanished!");
     if (target.bookedCount >= MAX_CAPACITY) throw new Error("Court Roster is Full! (Max 7)");
 
-    const allBookings = this.getStore<any[]>('bookings', []);
+    const allBookings = this.getStore<any[]>('bookings') || [];
     if (allBookings.some(b => b.sessionId === session.id && b.playerName === playerName)) {
       throw new Error(`${playerName} is already on the roster!`);
     }
@@ -110,7 +110,7 @@ class ApiService {
   }
 
   async cancelBooking(bookingId: string) {
-    const allBookings = this.getStore<any[]>('bookings', []);
+    const allBookings = this.getStore<any[]>('bookings') || [];
     const booking = allBookings.find(b => b.id === bookingId);
     if (!booking) return;
 
@@ -125,7 +125,7 @@ class ApiService {
   }
 
   async getBookings(userId: string): Promise<Booking[]> {
-    const all = this.getStore<any[]>('bookings', []);
+    const all = this.getStore<any[]>('bookings') || [];
     return all.filter(b => b.userId === userId).map(b => ({
       ...b,
       createdAt: { toDate: () => new Date(b.createdAt) },
@@ -134,14 +134,14 @@ class ApiService {
   }
 
   async getAnnouncements(): Promise<Announcement[]> {
-    const items = this.getStore<any[]>('announcements', []);
-    if (items.length === 0) return [];
+    const items = this.getStore<any[]>('announcements');
+    if (!items || items.length === 0) return [];
     return items.map(i => ({ ...i, createdAt: { toDate: () => new Date(i.createdAt) } }));
   }
 
   async getTips(): Promise<Tip[]> {
-    const items = this.getStore<any[]>('tips', []);
-    if (items.length === 0) return [];
+    const items = this.getStore<any[]>('tips');
+    if (!items || items.length === 0) return [];
     return items.map(tip => ({ ...tip, createdAt: { toDate: () => new Date(tip.createdAt) } }));
   }
 
@@ -158,13 +158,13 @@ class ApiService {
   }
 
   async createAnnouncement(data: any) {
-    const items = this.getStore<any[]>('announcements', []);
+    const items = this.getStore<any[]>('announcements') || [];
     const newItem = { ...data, id: `a-${Date.now()}`, createdAt: new Date(), readBy: [] };
     this.setStore('announcements', [newItem, ...items]);
   }
 
   async createTip(body: string, createdBy: string) {
-    const items = this.getStore<any[]>('tips', []);
+    const items = this.getStore<any[]>('tips') || [];
     const newItem: Tip = { id: `t-${Date.now()}`, body, createdAt: new Date(), createdBy };
     this.setStore('tips', [newItem, ...items]);
   }
