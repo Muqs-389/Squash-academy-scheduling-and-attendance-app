@@ -50,7 +50,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { userProfile, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-brand-green">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-brand-green">
+        Loading...
+      </div>
+    );
+  }
   if (!userProfile) return <Navigate to="/login" state={{ from: location }} replace />;
 
   return <>{children}</>;
@@ -89,11 +95,56 @@ const App: React.FC = () => {
       <HashRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<ProtectedRoute><Layout><Home /></Layout></ProtectedRoute>} />
-          <Route path="/schedule" element={<ProtectedRoute><Layout><Schedule /></Layout></ProtectedRoute>} />
-          <Route path="/bookings" element={<ProtectedRoute><Layout><Bookings /></Layout></ProtectedRoute>} />
-          <Route path="/announcements" element={<ProtectedRoute><Layout><Announcements /></Layout></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><Layout><Admin /></Layout></ProtectedRoute>} />
+          <Route
+            path="/"
+            element={(
+              <ProtectedRoute>
+                <Layout>
+                  <Home />
+                </Layout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/schedule"
+            element={(
+              <ProtectedRoute>
+                <Layout>
+                  <Schedule />
+                </Layout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/bookings"
+            element={(
+              <ProtectedRoute>
+                <Layout>
+                  <Bookings />
+                </Layout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/announcements"
+            element={(
+              <ProtectedRoute>
+                <Layout>
+                  <Announcements />
+                </Layout>
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/admin"
+            element={(
+              <ProtectedRoute>
+                <Layout>
+                  <Admin />
+                </Layout>
+              </ProtectedRoute>
+            )}
+          />
         </Routes>
       </HashRouter>
     </AuthProvider>
