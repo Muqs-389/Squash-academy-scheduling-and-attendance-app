@@ -9,13 +9,14 @@ import { ShieldCheck, Trophy } from 'lucide-react';
 const Admin: React.FC = () => {
   const { isAdmin, userProfile } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'sessions' | 'announcements'>('sessions');
+  const [activeTab, setActiveTab] = useState<'sessions' | 'announcements' | 'tips'>('sessions');
   
   const [title, setTitle] = useState('Academy Training');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('16:00');
   const [newsTitle, setNewsTitle] = useState('');
   const [newsBody, setNewsBody] = useState('');
+  const [tipBody, setTipBody] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -70,6 +71,29 @@ const Admin: React.FC = () => {
     }
   };
 
+  const handleCreateTip = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tipBody.trim()) return;
+    setLoading(true);
+    try {
+      await api.createTip(tipBody.trim(), userProfile?.uid || 'coach');
+      alert('Pro-tip posted for members.');
+      setTipBody('');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetData = () => {
+    if (!window.confirm('Reset all app data? This will clear roster, sessions, bookings, announcements, and tips.')) return;
+
+    const keys = ['academy_sessions', 'academy_bookings', 'academy_announcements', 'academy_tips', 'demo_auth_user'];
+    keys.forEach(key => localStorage.removeItem(key));
+    window.location.reload();
+  };
+
   if (!isAdmin) return null;
 
   return (
@@ -85,17 +109,23 @@ const Admin: React.FC = () => {
       </header>
 
       <div className="flex p-1.5 bg-slate-100 rounded-2xl">
-        <button 
+        <button
           onClick={() => setActiveTab('sessions')}
           className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'sessions' ? 'bg-white text-slate-900 shadow-soft' : 'text-slate-500 hover:text-slate-700'}`}
         >
           Add Session
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('announcements')}
           className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'announcements' ? 'bg-white text-slate-900 shadow-soft' : 'text-slate-500 hover:text-slate-700'}`}
         >
           Post News
+        </button>
+        <button
+          onClick={() => setActiveTab('tips')}
+          className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${activeTab === 'tips' ? 'bg-white text-slate-900 shadow-soft' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          Pro Tips
         </button>
       </div>
 
@@ -117,7 +147,7 @@ const Admin: React.FC = () => {
             </div>
             <Button type="submit" isLoading={loading}>Add to Schedule</Button>
           </form>
-        ) : (
+        ) : activeTab === 'announcements' ? (
           <form onSubmit={handlePostAnnouncement} className="space-y-4">
             <h2 className="text-xl font-bold text-slate-800 mb-6">Global Announcement</h2>
             <Input label="Headline" value={newsTitle} onChange={e => setNewsTitle(e.target.value)} required placeholder="e.g., Tournament Winners!" />
@@ -132,6 +162,21 @@ const Admin: React.FC = () => {
               />
             </div>
             <Button type="submit" isLoading={loading}>Broadcast News</Button>
+          </form>
+        ) : (
+          <form onSubmit={handleCreateTip} className="space-y-4">
+            <h2 className="text-xl font-bold text-slate-800 mb-6">Coach Pro-Tip</h2>
+            <div>
+              <label className="block text-slate-500 text-sm font-bold mb-2 ml-1">Tip Content</label>
+              <textarea
+                className="w-full bg-slate-50 border border-slate-200 text-slate-800 px-5 py-4 rounded-3xl focus:outline-none focus:ring-2 focus:ring-brand-secondary/30 placeholder-slate-400 h-32 transition-all font-medium"
+                value={tipBody}
+                onChange={e => setTipBody(e.target.value)}
+                required
+                placeholder="Share a quick training cue for players"
+              />
+            </div>
+            <Button type="submit" isLoading={loading}>Publish Pro-Tip</Button>
           </form>
         )}
       </div>
@@ -149,6 +194,10 @@ const Admin: React.FC = () => {
             <li className="text-slate-400 text-xs font-medium">• Past sessions are automatically archived from the user view.</li>
             <li className="text-slate-400 text-xs font-medium">• Use the "News" section for weather alerts or tournament results.</li>
         </ul>
+        <div className="mt-6">
+          <Button onClick={handleResetData} variant="danger" className="w-full">Reset App Data</Button>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-2 text-center">Clears local storage & reloads</p>
+        </div>
       </div>
     </div>
   );

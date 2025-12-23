@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, Calendar, BookOpen, Megaphone, Shield } from 'lucide-react';
 import { useAuth } from '../App';
-import { DEMO_MODE } from '../config';
+import { SHOW_DEMO_UI } from '../config';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col relative bg-brand-bg">
-      {DEMO_MODE && (
+      {SHOW_DEMO_UI && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-brand-secondary text-white text-[10px] font-bold text-center py-1 uppercase tracking-wider">
           Demo Protocol Active • Academy Preview
         </div>

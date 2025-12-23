@@ -1,12 +1,8 @@
 
 import { DEMO_MODE } from '../config';
-import { UserProfile, Session, Booking, Announcement, UserRole } from '../types';
+import { UserProfile, Session, Booking, Announcement, UserRole, Tip } from '../types';
 
 const MAX_CAPACITY = 7;
-
-const generateInitialSessions = (): Session[] => {
-  return [];
-};
 
 class ApiService {
   private currentUser: UserProfile | null = null;
@@ -143,6 +139,12 @@ class ApiService {
     return items.map(i => ({ ...i, createdAt: { toDate: () => new Date(i.createdAt) } }));
   }
 
+  async getTips(): Promise<Tip[]> {
+    const items = this.getStore<any[]>('tips', []);
+    if (items.length === 0) return [];
+    return items.map(tip => ({ ...tip, createdAt: { toDate: () => new Date(tip.createdAt) } }));
+  }
+
   async createSession(data: any) {
     const current = await this.getSessions();
     const newItem = { 
@@ -159,6 +161,12 @@ class ApiService {
     const items = this.getStore<any[]>('announcements', []);
     const newItem = { ...data, id: `a-${Date.now()}`, createdAt: new Date(), readBy: [] };
     this.setStore('announcements', [newItem, ...items]);
+  }
+
+  async createTip(body: string, createdBy: string) {
+    const items = this.getStore<any[]>('tips', []);
+    const newItem: Tip = { id: `t-${Date.now()}`, body, createdAt: new Date(), createdBy };
+    this.setStore('tips', [newItem, ...items]);
   }
 }
 
